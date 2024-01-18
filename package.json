@@ -1,0 +1,18 @@
+{
+  "name": "solana-wallet-adapter-light",
+  "version": "1.0.1",
+  "description": "Solana wallet adapter to allow your application to easily connect the user",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "solana",
+    "wallet",
+    "adapter",
+    "wallet-adapter",
+    "walletadapter"
+  ],
+  "author": "Olivier Haberzettel <olivier.haberzettel@hotmail.fr> (https://www.aiternate.com/)",
+  "license": "ISC"
+}
