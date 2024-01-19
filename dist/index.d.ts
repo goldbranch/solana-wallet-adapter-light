@@ -1,2 +1,3 @@
 import { SolanaConnectLight } from "./adapter/WalletAdapter";
-export { SolanaConnectLight };
+import { SolanaConnectConfig } from "./adapter/SolanaConnectConfig";
+export { SolanaConnectLight, SolanaConnectConfig };

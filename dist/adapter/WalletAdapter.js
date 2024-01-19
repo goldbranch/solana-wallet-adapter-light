@@ -9,45 +9,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SolanaConnectLight = void 0;
+exports.SolanaConnectLight = exports.OpenState = void 0;
 const core_1 = require("@wallet-standard/core");
 const wallet_standard_wallet_adapter_base_1 = require("@solana/wallet-standard-wallet-adapter-base");
+const WalletStyle_1 = require("./WalletStyle");
+const WalletHtmlGenerator_1 = require("./WalletHtmlGenerator");
 const MODAL_ID = "swal-modal";
 const CLOSE_BTN_ID = "swal-close-btn";
 const ADAPTER_LIST_ID = "swal-adapter-list";
-const ELM_APP_ID = "__sc__elm_app";
 const CONNECTION_EVENT = "swal-connect-event";
 const VISIBILITY_EVENT = "swal-visibility-event";
+var OpenState;
+(function (OpenState) {
+    OpenState[OpenState["Open"] = 0] = "Open";
+    OpenState[OpenState["Close"] = 1] = "Close";
+})(OpenState || (exports.OpenState = OpenState = {}));
 /* eslint-disable fp/no-this, fp/no-mutation, fp/no-class */
 class SolanaConnectLight {
     constructor(config) {
-        this._modal = document.getElementById(MODAL_ID);
-        this._closeBtn = document.getElementById(CLOSE_BTN_ID);
-        this._adapterList = document.getElementById(ADAPTER_LIST_ID);
-        this._defaultAddAdapterCallback = (wl) => {
-            const liElement = document.createElement('li');
-            const buttonElement = document.createElement('button');
-            buttonElement.classList.add('wallet-adapter-button');
-            buttonElement.tabIndex = 0;
-            buttonElement.type = 'button';
-            const iconElement = document.createElement('i');
-            iconElement.classList.add('wallet-adapter-button-start-icon');
-            const imgElement = document.createElement('img');
-            imgElement.src = wl.icon;
-            iconElement.appendChild(imgElement);
-            buttonElement.appendChild(iconElement);
-            buttonElement.appendChild(document.createTextNode(wl.name));
-            const spanElement = document.createElement('span');
-            if (wl.readyState == 'Installed')
-                spanElement.appendChild(document.createTextNode('Detected'));
-            buttonElement.appendChild(spanElement);
-            liElement.appendChild(buttonElement);
-            return {
-                elementToAppend: liElement,
-                elementToBindConnectAction: buttonElement
-            };
+        this._toggleModalCallback = (element, state) => {
+            switch (state) {
+                case OpenState.Open:
+                    element.style.display = "block";
+                    setTimeout(() => {
+                        element.classList.add('swal-modal-fade-in');
+                    }, 1);
+                    break;
+                case OpenState.Close:
+                    element.classList.remove('swal-modal-fade-in');
+                    setTimeout(() => {
+                        element.style.display = "none";
+                    }, 500);
+                    break;
+            }
         };
-        this._addAdapterCallback = this._defaultAddAdapterCallback;
+        this._addAdapterCallback = WalletHtmlGenerator_1.createHtmlAdapter;
+        this._generateStyleFunction = () => {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = WalletStyle_1.styleText;
+            document.head.appendChild(styleElement);
+        };
         this.wallets = (0, core_1.getWallets)();
         this.isOpen = false;
         this.debug = (config === null || config === void 0 ? void 0 : config.debug) || false;
@@ -55,6 +56,22 @@ class SolanaConnectLight {
         this.activeWallet = null;
         if (config === null || config === void 0 ? void 0 : config.addAdapterCallback)
             this._addAdapterCallback = config === null || config === void 0 ? void 0 : config.addAdapterCallback;
+        if (config === null || config === void 0 ? void 0 : config.toggleModalCallback)
+            this._toggleModalCallback = config.toggleModalCallback;
+        if (!config || config.generateHtml === undefined || config.generateHtml)
+            (0, WalletHtmlGenerator_1.createHtmlBase)();
+        if (!config || (config === null || config === void 0 ? void 0 : config.generateStyle) === undefined || config.generateStyle)
+            this._generateStyleFunction();
+        const modalTmp = document.getElementById(MODAL_ID);
+        const closeTmp = document.getElementById(CLOSE_BTN_ID);
+        const listTmp = document.getElementById(ADAPTER_LIST_ID);
+        if (!listTmp || !closeTmp || !modalTmp) {
+            throw new Error("One or more of these html element with these id is not found in the dom: [swal-modal, swal-close-btn, swal-adapter-list]."
+                + "If you use property generateHtml=false, make sur to add the base html structure in your main HTML. You can find it on the readme page here https://github.com/Olive-fr/solana-wallet-adapter-light.");
+        }
+        this._modal = modalTmp;
+        this._closeBtn = closeTmp;
+        this._adapterList = listTmp;
         this._closeBtn.addEventListener("click", (e) => {
             this.showMenu(false);
         });
@@ -136,7 +153,8 @@ class SolanaConnectLight {
     }
     showMenu(val) {
         if (this._modal) {
-            this._modal.style.display = val ? "block" : "none";
+            this._toggleModalCallback(this._modal, val ? OpenState.Open : OpenState.Close);
+            // this._modal.style.display = val ? "block" : "none";
         }
         this.isOpen = val;
         const event = new CustomEvent(VISIBILITY_EVENT, { detail: this.isOpen });

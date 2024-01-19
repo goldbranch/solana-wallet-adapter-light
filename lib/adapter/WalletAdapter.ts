@@ -4,53 +4,20 @@ import {
   StandardWalletAdapter,
   isWalletAdapterCompatibleWallet,
 } from "@solana/wallet-standard-wallet-adapter-base";
+import { styleText } from "./WalletStyle";
+import { createHtmlAdapter, createHtmlBase } from "./WalletHtmlGenerator";
+import { SolanaConnectConfig } from "./SolanaConnectConfig";
+
 
 const MODAL_ID: string = "swal-modal";
 const CLOSE_BTN_ID: string = "swal-close-btn";
 const ADAPTER_LIST_ID: string = "swal-adapter-list";
-const ELM_APP_ID: string = "__sc__elm_app";
+
 const CONNECTION_EVENT: string = "swal-connect-event";
 const VISIBILITY_EVENT: string = "swal-visibility-event";
 
-interface SolanaConnectConfig {
-  debug?: boolean;
-  additionalAdapters?: Adapter[];
-  /**
-   * Called when an adapter will be appened to the adapter list in the modal.
-   * By default, if you don't specify any value, the callback will use the following code:
-   * @example
-   * (wl) => {
-   *        const liElement: HTMLElement = document.createElement('li');
-   *
-   *        const buttonElement = document.createElement('button');
-   *        buttonElement.classList.add('wallet-adapter-button');
-   *        buttonElement.tabIndex = 0;
-   *        buttonElement.type = 'button';
-   *
-   *        const iconElement = document.createElement('i');
-   *        iconElement.classList.add('wallet-adapter-button-start-icon');
-   *
-   *        const imgElement = document.createElement('img');
-   *        imgElement.src = wl.icon;
-   *        iconElement.appendChild(imgElement);
-   *
-   *        buttonElement.appendChild(iconElement);
-   *        buttonElement.appendChild(document.createTextNode(wl.name));
-   *        const spanElement = document.createElement('span');
-   *
-   *        if (wl.readyState == 'Installed')
-   *          spanElement.appendChild(document.createTextNode('Detected'));
-   *        buttonElement.appendChild(spanElement);
-   *
-   *        liElement.appendChild(buttonElement);
-   *
-   *        return {
-   *          elementToAppend: liElement,
-   *          elementToBindConnectAction: buttonElement
-   *        }
-   *      }
-   */
-  addAdapterCallback?: (wl: Adapter) => {elementToAppend: HTMLElement, elementToBindConnectAction: HTMLElement};
+export enum OpenState {
+  Open, Close
 }
 
 /* eslint-disable fp/no-this, fp/no-mutation, fp/no-class */
@@ -62,42 +29,38 @@ class SolanaConnectLight {
   // private elmApp: ElmApp;
   private wallets: Wallets;
 
-  private readonly _modal = document.getElementById(MODAL_ID);
-  private readonly _closeBtn = document.getElementById(CLOSE_BTN_ID) as HTMLButtonElement;
-  private readonly _adapterList = document.getElementById(ADAPTER_LIST_ID) as HTMLUListElement;
+  private readonly _modal: HTMLElement;
+  private readonly _closeBtn: HTMLButtonElement;
+  private readonly _adapterList:HTMLUListElement;
 
-  private readonly _defaultAddAdapterCallback: (wl: Adapter) => {elementToAppend: HTMLElement, elementToBindConnectAction: HTMLElement} = (wl) => {
-    const liElement: HTMLElement = document.createElement('li');
-
-    const buttonElement = document.createElement('button');
-    buttonElement.classList.add('wallet-adapter-button');
-    buttonElement.tabIndex = 0;
-    buttonElement.type = 'button';
-
-    const iconElement = document.createElement('i');
-    iconElement.classList.add('wallet-adapter-button-start-icon');
-
-    const imgElement = document.createElement('img');
-    imgElement.src = wl.icon;
-    iconElement.appendChild(imgElement);
-
-    buttonElement.appendChild(iconElement);
-    buttonElement.appendChild(document.createTextNode(wl.name));
-    const spanElement = document.createElement('span');
-
-    if (wl.readyState == 'Installed')
-      spanElement.appendChild(document.createTextNode('Detected'));
-    buttonElement.appendChild(spanElement);
-
-    liElement.appendChild(buttonElement);
-
-    return {
-      elementToAppend: liElement,
-      elementToBindConnectAction: buttonElement
+  private _toggleModalCallback: (element:HTMLElement, state: OpenState) => void = (element, state) => {
+    switch(state) {
+      case OpenState.Open: 
+        element.style.display = "block"; 
+        setTimeout(() => {
+          element.classList.add('swal-modal-fade-in'); 
+        }, 1);
+        break;
+      case OpenState.Close:
+        element.classList.remove('swal-modal-fade-in');
+        setTimeout(() => {
+          element.style.display = "none"; 
+        }, 500);
+        break;
     }
-  }
+  };
 
-  private _addAdapterCallback:(wl: Adapter) => {elementToAppend: HTMLElement, elementToBindConnectAction: HTMLElement} = this._defaultAddAdapterCallback;
+  private _addAdapterCallback:(wl: Adapter) => {elementToAppend: HTMLElement, elementToBindConnectAction: HTMLElement} = createHtmlAdapter;
+
+  private _generateStyleFunction = () => {
+
+      const styleElement: HTMLStyleElement = document.createElement('style');
+
+      styleElement.textContent = styleText;
+
+      document.head.appendChild(styleElement);
+    
+  }
 
   constructor(config?: SolanaConnectConfig) {
     this.wallets = getWallets();
@@ -107,6 +70,24 @@ class SolanaConnectLight {
     this.activeWallet = null;
     if (config?.addAdapterCallback)
       this._addAdapterCallback = config?.addAdapterCallback;
+    if (config?.toggleModalCallback)
+      this._toggleModalCallback = config.toggleModalCallback;
+    if (!config || config.generateHtml === undefined || config.generateHtml) 
+      createHtmlBase();
+    if (!config || config?.generateStyle === undefined || config.generateStyle) 
+      this._generateStyleFunction();
+
+    const modalTmp = document.getElementById(MODAL_ID);
+    const closeTmp = document.getElementById(CLOSE_BTN_ID);
+    const listTmp = document.getElementById(ADAPTER_LIST_ID);
+
+    if (!listTmp || !closeTmp || !modalTmp) {
+      throw new Error("One or more of these html element with these id is not found in the dom: [swal-modal, swal-close-btn, swal-adapter-list]."
+      +"If you use property generateHtml=false, make sur to add the base html structure in your main HTML. You can find it on the readme page here https://github.com/Olive-fr/solana-wallet-adapter-light.");
+    }
+    this._modal = modalTmp as HTMLElement;
+    this._closeBtn = closeTmp as HTMLButtonElement;
+    this._adapterList = listTmp as HTMLUListElement
     
 
     this._closeBtn.addEventListener("click", (e) => {
@@ -207,7 +188,8 @@ class SolanaConnectLight {
   }
   private showMenu(val: boolean) {
     if (this._modal) {
-      this._modal.style.display = val ? "block" : "none";
+      this._toggleModalCallback(this._modal, val?OpenState.Open:OpenState.Close);
+      // this._modal.style.display = val ? "block" : "none";
     }
 
     this.isOpen = val;
