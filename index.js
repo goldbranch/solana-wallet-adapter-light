@@ -1,4 +1,9 @@
-// var loadash = require()
-exports.printMsg = function() {
-    console.log("testttss");
+
+
+module.exports = {
+    SolanaConnectLight
 }
+
+// export {
+//     SolanaConnectLight
+// }

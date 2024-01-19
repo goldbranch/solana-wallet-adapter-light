@@ -1,10 +1,14 @@
 {
-  "name": "solana-wallet-adapter-light",
+  "name": "@aiternate/solana-wallet-adapter-light",
   "version": "1.0.1",
   "description": "Solana wallet adapter to allow your application to easily connect the user",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublish": "npm run build",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "publish": "publish --access public"
   },
   "keywords": [
     "solana",
@@ -14,5 +18,21 @@
     "walletadapter"
   ],
   "author": "Olivier Haberzettel <olivier.haberzettel@hotmail.fr> (https://www.aiternate.com/)",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Olive-fr/solana-wallet-adapter-light.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Olive-fr/solana-wallet-adapter-light/issues"
+  },
+  "homepage": "https://github.com/Olive-fr/solana-wallet-adapter-light#readme",
+  "dependencies": {
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-standard-wallet-adapter-base": "^1.1.2",
+    "@wallet-standard/core": "^1.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
 }
