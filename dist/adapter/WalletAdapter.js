@@ -55,58 +55,9 @@ class SolanaConnectLight {
         this.activeWallet = null;
         if (config === null || config === void 0 ? void 0 : config.addAdapterCallback)
             this._addAdapterCallback = config === null || config === void 0 ? void 0 : config.addAdapterCallback;
-        // this.elmApp = Elm.Main.init({
-        //   node: document.getElementById(ELM_APP_ID),
-        //   flags: {},
-        // });
         this._closeBtn.addEventListener("click", (e) => {
             this.showMenu(false);
         });
-        // this.elmApp.ports.close.subscribe(() => {
-        //   this.showMenu(false);
-        // });
-        // this.elmApp.ports.connect.subscribe((tag: string) =>
-        //   (async () => {
-        //     const wallet = this.options.get(tag);
-        //     if (!wallet) {
-        //       throw new Error(`Wallet not found: ${tag}`);
-        //     }
-        //     await wallet.connect();
-        //     if (!wallet.connected || !wallet.publicKey) {
-        //       throw new Error(`Wallet not connected: ${wallet.name}`);
-        //     }
-        //     wallet.on("disconnect", () => {
-        //       wallet.removeListener("disconnect");
-        //       this.log("disconnected");
-        //       this.activeWallet = null;
-        //       const event = new CustomEvent(CONNECTION_EVENT, { detail: null });
-        //       document.dispatchEvent(event);
-        //       // this.elmApp.ports.disconnectIn.send(null);
-        //     });
-        //     this.activeWallet = tag;
-        //     // this.elmApp.ports.connectCb.send(wallet.publicKey.toString());
-        //     const event = new CustomEvent(CONNECTION_EVENT, { detail: wallet });
-        //     document.dispatchEvent(event);
-        //     this.showMenu(false);
-        //   })().catch((e) => {
-        //     // this.elmApp.ports.connectCb.send(null);
-        //     this.log(e);
-        //   })
-        // );
-        // this.elmApp.ports.disconnect.subscribe((close: boolean) =>
-        //   (async () => {
-        //     if (close) {
-        //       this.showMenu(false);
-        //     }
-        //     const wallet = this.getWallet();
-        //     if (wallet) {
-        //       this.log("disconnecting", wallet.name);
-        //       await wallet.disconnect();
-        //     }
-        //   })().catch((e) => {
-        //     this.log(e);
-        //   })
-        // );
         const processWallet = (wl) => {
             if (this._adapterByName.has(wl.name)) {
                 this.log("wallet duplicate:", wl.name);
@@ -141,10 +92,6 @@ class SolanaConnectLight {
                 this.log(e);
             }));
             this._adapterList.appendChild(elementsCallback.elementToAppend);
-            // this.elmApp.ports.walletCb.send({
-            //   name: wl.name,
-            //   icon: wl.icon,
-            // });
         };
         const validateWallet = (wallet) => {
             if ((0, wallet_standard_wallet_adapter_base_1.isWalletAdapterCompatibleWallet)(wallet)) {
