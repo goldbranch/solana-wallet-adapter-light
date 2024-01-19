@@ -9,10 +9,13 @@ Solana wallet connector for your typescript app. You can change the design of th
 ---
 
 ### __Usage:__
+
+#### Installation
 ```
 npm i @aiternate/solana-wallet-adapter-light
 ```
 
+#### If you use TypeScript
 ```typescript
 import { SolanaConnectLight } from "@aiternate/solana-wallet-adapter-light";
 import { Adapter } from "@solana/wallet-adapter-base";
@@ -33,7 +36,9 @@ solConnect.onVisibilityChange((isOpen: boolean) => {
 
 const wallet: Adapter | null = solConnect.getWallet();
 ```
-or use with [unpkg](https://www.unpkg.com/):
+
+#### If you use vanilla javascript
+Use with [unpkg](https://www.unpkg.com/):
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -49,37 +54,7 @@ or use with [unpkg](https://www.unpkg.com/):
 </html>
 ```
 
-###  __Adding more adapters:__
-By default, only wallets that support the [Wallet Standard](https://github.com/wallet-standard/wallet-standard) will appear, but additional options can be provided.
-```typescript
-import {
-  SolanaMobileWalletAdapter,
-  createDefaultAuthorizationResultCache,
-  createDefaultAddressSelector,
-  createDefaultWalletNotFoundHandler,
-} from "@solana-mobile/wallet-adapter-mobile";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
-import { UnsafeBurnerWalletAdapter } from "@solana/wallet-adapter-unsafe-burner";
-
-const solConnect = new SolanaConnectLight({
-  additionalAdapters: [
-    new SolflareWalletAdapter(),
-    new UnsafeBurnerWalletAdapter(),
-    new SolanaMobileWalletAdapter({
-      addressSelector: createDefaultAddressSelector(),
-      appIdentity: {
-        name: "Supercorp",
-        uri: "https://supercorp.app/",
-        icon: "icon.png",
-      },
-      authorizationResultCache: createDefaultAuthorizationResultCache(),
-      cluster: "mainnet-beta",
-      onWalletNotFound: createDefaultWalletNotFoundHandler(),
-    }),
-  ],
-});
-```
-
+#### Template configuration
 In your HTML page, you must add these lines
 ```html
 <div id="swal-modal" class="wallet-adapter-modal wallet-adapter-modal-fade-in ">
@@ -104,7 +79,7 @@ The importants elements here are id="swal-modal", id="swal-close-btn" and id="sw
  - swal-close-btn: Used to bind the Hide action
  - swal-adapter-list: Used to append adapters
 
-To change adapters styles, you need to add the addAdapterCallback property to the SolanaConnectConfig object passed through the constructor of SolanaConnectLight. You can see below the default implementation of this property.
+To change adapters buttons html, you need to add the addAdapterCallback property to the SolanaConnectConfig object passed through the constructor of SolanaConnectLight. You can see below the default implementation of this property.
 ```typescript
 const solanaConnect = new SolanaConnectLight({
     addAdapterCallback: (wl) => {
@@ -139,7 +114,7 @@ const solanaConnect = new SolanaConnectLight({
     },
   });
 ```
-
+#### Style definition
 Also, you may want to take the css file:
 ```css
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
@@ -438,4 +413,35 @@ Also, you may want to take the css file:
     border-radius: 8px;
     color: #fff;
 }
+```
+
+###  __Adding more adapters:__
+By default, only wallets that support the [Wallet Standard](https://github.com/wallet-standard/wallet-standard) will appear, but additional options can be provided.
+```typescript
+import {
+  SolanaMobileWalletAdapter,
+  createDefaultAuthorizationResultCache,
+  createDefaultAddressSelector,
+  createDefaultWalletNotFoundHandler,
+} from "@solana-mobile/wallet-adapter-mobile";
+import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+import { UnsafeBurnerWalletAdapter } from "@solana/wallet-adapter-unsafe-burner";
+
+const solConnect = new SolanaConnectLight({
+  additionalAdapters: [
+    new SolflareWalletAdapter(),
+    new UnsafeBurnerWalletAdapter(),
+    new SolanaMobileWalletAdapter({
+      addressSelector: createDefaultAddressSelector(),
+      appIdentity: {
+        name: "Supercorp",
+        uri: "https://supercorp.app/",
+        icon: "icon.png",
+      },
+      authorizationResultCache: createDefaultAuthorizationResultCache(),
+      cluster: "mainnet-beta",
+      onWalletNotFound: createDefaultWalletNotFoundHandler(),
+    }),
+  ],
+});
 ```
