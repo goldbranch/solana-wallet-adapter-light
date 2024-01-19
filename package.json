@@ -1,6 +1,6 @@
 {
   "name": "@aiternate/solana-wallet-adapter-light",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Solana wallet adapter to allow your application to easily connect the user",
   "publishConfig": {
     "access": "public"
