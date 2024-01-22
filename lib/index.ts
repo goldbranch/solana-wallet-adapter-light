@@ -1,11 +1,12 @@
 import { SolanaConnectLight } from "./adapter/WalletAdapter"
 import { SolanaConnectConfig } from "./adapter/SolanaConnectConfig"
+import { Adapter } from "@solana/wallet-adapter-base";
 
 
 export {
     SolanaConnectLight, 
-    SolanaConnectConfig
-
+    SolanaConnectConfig,
+    Adapter
 }
 
 // console.log(module)
