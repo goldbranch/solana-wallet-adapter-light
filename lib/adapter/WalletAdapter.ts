@@ -1,211 +1,110 @@
-import { getWallets, Wallet, Wallets } from "@wallet-standard/core";
 import { Adapter } from "@solana/wallet-adapter-base";
-import {
-  StandardWalletAdapter,
-  isWalletAdapterCompatibleWallet,
-} from "@solana/wallet-standard-wallet-adapter-base";
-import { styleText } from "./WalletStyle";
-import { createHtmlAdapter, createHtmlBase } from "./WalletHtmlGenerator";
-import { SolanaConnectConfig } from "./SolanaConnectConfig";
+import type { SolanaSignInInput, SolanaSignInOutput } from '@solana/wallet-standard-features';
 
+import { encodeBase64 } from "tweetnacl-util";
 
-const MODAL_ID: string = "swal-modal";
-const CLOSE_BTN_ID: string = "swal-close-btn";
-const ADAPTER_LIST_ID: string = "swal-adapter-list";
+export class ErrorAdapterNotConaintSignInMethod extends Error {
+};
+export class ErrorUserDeclinedSignIn extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+};
 
-const CONNECTION_EVENT: string = "swal-connect-event";
-const VISIBILITY_EVENT: string = "swal-visibility-event";
+export class SignatureResult {
+    public readonly signature: Uint8Array;
 
-export enum OpenState {
-  Open, Close
+    constructor(signature: Uint8Array) {
+        this.signature = signature;
+    }
+
+    toBase64(): string {
+        return encodeBase64(this.signature);
+    }
 }
 
-/* eslint-disable fp/no-this, fp/no-mutation, fp/no-class */
-class SolanaConnectLight {
-  isOpen: boolean;
-  debug: boolean;
-  activeWallet: string | null;
-  private _adapterByName: Map<string, Adapter>;
-  // private elmApp: ElmApp;
-  private wallets: Wallets;
 
-  private readonly _modal: HTMLElement;
-  private readonly _closeBtn: HTMLButtonElement;
-  private readonly _adapterList:HTMLUListElement;
+export class WalletAdapterLight {
+    public adapter: Adapter;
 
-  private _toggleModalCallback: (element:HTMLElement, state: OpenState) => void = (element, state) => {
-    switch(state) {
-      case OpenState.Open: 
-        element.style.display = "block"; 
-        setTimeout(() => {
-          element.classList.add('swal-modal-fade-in'); 
-        }, 1);
-        break;
-      case OpenState.Close:
-        element.classList.remove('swal-modal-fade-in');
-        setTimeout(() => {
-          element.style.display = "none"; 
-        }, 500);
-        break;
-    }
-  };
 
-  private _addAdapterCallback:(wl: Adapter) => {elementToAppend: HTMLElement, elementToBindConnectAction: HTMLElement} = createHtmlAdapter;
-
-  private _generateStyleFunction = () => {
-
-      const styleElement: HTMLStyleElement = document.createElement('style');
-
-      styleElement.textContent = styleText;
-
-      document.head.appendChild(styleElement);
-    
-  }
-
-  constructor(config?: SolanaConnectConfig) {
-    this.wallets = getWallets();
-    this.isOpen = false;
-    this.debug = config?.debug || false;
-    this._adapterByName = new Map();
-    this.activeWallet = null;
-    if (config?.addAdapterCallback)
-      this._addAdapterCallback = config?.addAdapterCallback;
-    if (config?.toggleModalCallback)
-      this._toggleModalCallback = config.toggleModalCallback;
-    if (!config || config.generateHtml === undefined || config.generateHtml) 
-      createHtmlBase();
-    if (!config || config?.generateStyle === undefined || config.generateStyle) 
-      this._generateStyleFunction();
-
-    const modalTmp = document.getElementById(MODAL_ID);
-    const closeTmp = document.getElementById(CLOSE_BTN_ID);
-    const listTmp = document.getElementById(ADAPTER_LIST_ID);
-
-    if (!listTmp || !closeTmp || !modalTmp) {
-      throw new Error("One or more of these html element with these id is not found in the dom: [swal-modal, swal-close-btn, swal-adapter-list]."
-      +"If you use property generateHtml=false, make sur to add the base html structure in your main HTML. You can find it on the readme page here https://github.com/Olive-fr/solana-wallet-adapter-light.");
-    }
-    this._modal = modalTmp as HTMLElement;
-    this._closeBtn = closeTmp as HTMLButtonElement;
-    this._adapterList = listTmp as HTMLUListElement
-    
-
-    this._closeBtn.addEventListener("click", (e) => {
-      this.showMenu(false);
-    })
-
-    const processWallet = (wl: Adapter) => {
-      if (this._adapterByName.has(wl.name)) {
-        this.log("wallet duplicate:", wl.name);
-        return;
-      }
-      this._adapterByName.set(wl.name, wl);
-
-      let elementsCallback = this._addAdapterCallback(wl);
-
-      elementsCallback.elementToBindConnectAction.addEventListener("click", (e) => 
-        (async () => {
-          const wallet = this._adapterByName.get(wl.name);
-
-          if (!wallet) {
-            throw new Error(`Wallet not found: ${wl.name}`);
-          }
-
-          await wallet.connect();
-
-          if (!wallet.connected || !wallet.publicKey) {
-            throw new Error(`Wallet not connected: ${wallet.name}`);
-          }
-
-          wallet.on("disconnect", () => {
-            wallet.removeListener("disconnect");
-            this.log("disconnected");
-            this.activeWallet = null;
-            const event = new CustomEvent(CONNECTION_EVENT, { detail: null });
-            document.dispatchEvent(event);
-            // this.elmApp.ports.disconnectIn.send(null);
-          });
-
-          this.activeWallet = wl.name;
-          // this.elmApp.ports.connectCb.send(wallet.publicKey.toString());
-
-          const event = new CustomEvent(CONNECTION_EVENT, { detail: wallet });
-          document.dispatchEvent(event);
-          this.showMenu(false);
-        })().catch((e) => {
-          // this.elmApp.ports.connectCb.send(null);
-          this.log(e);
-        })
-      );
-
-      this._adapterList.appendChild(elementsCallback.elementToAppend)
-
-    };
-
-    const validateWallet = (wallet: Wallet) => {
-      if (isWalletAdapterCompatibleWallet(wallet)) {
-        processWallet(new StandardWalletAdapter({ wallet }));
-      } else {
-        this.log("wallet not compatible:", wallet.name);
-      }
-    };
-
-    this.wallets.get().forEach((newWallet) => {
-      this.log("wallet read:", newWallet.name);
-      validateWallet(newWallet);
-    });
-
-    this.wallets.on("register", (newWallet) => {
-      this.log("wallet registered:", newWallet.name);
-      validateWallet(newWallet);
-    });
-
-    if (config?.additionalAdapters) {
-      config.additionalAdapters.forEach(processWallet);
+    constructor(adapter: Adapter) {
+        this.adapter = adapter;
     }
 
-    // setTimeout(() => this.elmApp.ports.walletTimeout.send(null), 2500);
-  }
-  openMenu() {
-    this.showMenu(true);
-  }
-  getWallet(): Adapter | null {
-    if (!this.activeWallet) {
-      return null;
-    }
-    const w = this._adapterByName.get(this.activeWallet);
-    return w || null;
-  }
-  onWalletChange(callback: (_: Adapter | null) => void) {
-    document.addEventListener(CONNECTION_EVENT, (ev: any) => {
-      callback(ev.detail);
-    });
-  }
-  onVisibilityChange(callback: (_: boolean) => void) {
-    document.addEventListener(VISIBILITY_EVENT, (ev: any) => {
-      callback(ev.detail);
-    });
-  }
-  private showMenu(val: boolean) {
-    if (this._modal) {
-      this._toggleModalCallback(this._modal, val?OpenState.Open:OpenState.Close);
-      // this._modal.style.display = val ? "block" : "none";
+    public getWallet(): string {
+        if (this.adapter.publicKey) 
+            return this.adapter.publicKey.toString();
+        return "";
     }
 
-    this.isOpen = val;
+    private createSignData(input: SolanaSignInInput): SolanaSignInInput {
+        let domain = input.domain;
+        if (!domain) {
+            const uri = window.location.href;
+            const currentUrl = new URL(uri);
+            domain = currentUrl.host;
+        }
 
-    const event = new CustomEvent(VISIBILITY_EVENT, { detail: this.isOpen });
-
-    document.dispatchEvent(event);
-  }
-  // eslint-disable-next-line fp/no-rest-parameters
-  private log(...xs: any[]) {
-    if (this.debug) {
-      console.log(...xs);
+        let signInData: SolanaSignInInput = {
+            issuedAt: input.issuedAt?input.issuedAt:new Date().toISOString(),
+            
+            chainId: input.chainId?input.chainId:"mainnet",
+            nonce: input.nonce,
+            resources: input.resources?input.resources:[],
+            version: input.version?input.version:"1",
+            statement: input.statement?input.statement:"Clicking Sign or Approve only means you have proved this wallet is owned by you. This request will not trigger any blockchain transaction or cost any gas fee.",
+            domain: domain,
+        };
+        
+        return signInData;
     }
-  }
+
+    /**
+     * Method not tested in a production environment.
+     * @param input 
+     * @returns 
+     * @throws {ErrorUserDeclinedSignIn} If the user decline the sign in request
+     * @throws {ErrorAdapterNotConaintSignInMethod} If the wallet adapter doesn't contain the signInMethod
+     */
+    public async signInWithSolana(input: SolanaSignInInput): Promise<SolanaSignInOutput> {
+        if (("signIn" in this.adapter)) {
+            let inputReal = this.createSignData(input);
+            try {
+                const output: SolanaSignInOutput = await this.adapter.signIn(inputReal);
+                return output;
+            } catch (error) {
+                throw new ErrorUserDeclinedSignIn(error as string);
+            }
+        };
+        throw new ErrorAdapterNotConaintSignInMethod();
+    }
+
+    /**
+     * Sign a message with the solana blockchain
+     * @param message Your message in string or Uint8Array to sign. If your message is in string, it will be encoded using the text encoder.
+     * @returns The message signed. most of the time, you will need to convert the signature to base64 using toBase64() method on the result.
+     * @throws {Error} If you provide a message with the wrong type
+     * @throws {ErrorUserDeclinedSignIn} If the user decline the sign in request
+     * @throws {ErrorAdapterNotConaintSignInMethod} If the wallet adapter doesn't contain the signInMethod
+     */
+    public async signMessageWithSolana(message: string | Uint8Array): Promise<SignatureResult> {
+        if (("signMessage" in this.adapter)) {
+            try {
+                let messageToSign: Uint8Array;
+                if (message instanceof Uint8Array) {
+                    messageToSign = message;
+                } else if (typeof message  === "string") {
+                    messageToSign = new TextEncoder().encode(message);
+                } else {
+                    throw new Error("Your message is not a string or Uint8Array");
+                }
+                const output = await this.adapter.signMessage(messageToSign);
+                return new SignatureResult(output);
+            } catch (error) {
+                throw new ErrorUserDeclinedSignIn(error as string);
+            }
+        };
+        throw new ErrorAdapterNotConaintSignInMethod();
+    }
 }
-/* eslint-enable fp/no-this, fp/no-mutation, fp/no-class */
-
-
-export { SolanaConnectLight, SolanaConnectConfig };

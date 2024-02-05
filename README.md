@@ -2,7 +2,7 @@
 Solana wallet connector for your typescript app or vanilla JS. You can change the design of the modal. 
 
 
-[npm](https://www.npmjs.com/package/solana-connect)
+[npm](https://www.npmjs.com/package/@aiternate/solana-wallet-adapter-light)
 
 ![wallet menu](assets/preview.png)
 

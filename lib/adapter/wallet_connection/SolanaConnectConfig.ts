@@ -1,5 +1,5 @@
 import { Adapter } from "@solana/wallet-adapter-base";
-import { OpenState } from "./WalletAdapter";
+import { OpenState } from "./SolanaConnectLight";
 
 /**
  * Configuration object for the SolanaConnectLight object
