@@ -8,7 +8,6 @@
       "strict": true,
       "skipLibCheck": true, 
       "types": [
-        "@web3auth/sign-in-with-solana",
         "@solana/wallet-adapter-base"
       ],
     },
